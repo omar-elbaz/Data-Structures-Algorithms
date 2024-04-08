@@ -3,21 +3,25 @@ import matplotlib.pyplot as plt
 import heapq
 from collections import deque
 
+# Defines a Process class to hold information about each process
 class Process:
     def __init__(self, id, burst, arrivalTime):
         self.id = id
         self.burst = burst
         self.arrivalTime = arrivalTime
 
+# Generate a single process with random burst and arrival times
 def generate_process(id):
     burst = random.randint(1, 5)
     arrivalTime = random.randint(1, 15)
     return Process(id, burst, arrivalTime)
 
+# Create a dictionary of processes for simulation
 def create_process_map():
     processes = {f"P{i}": generate_process(f"P{i}") for i in range(1, 11)}
     return {pid: (process.burst, process.arrivalTime) for pid, process in processes.items()}
 
+# Plot a Gantt chart for the given scheduling results
 def plot_gantt_chart(scheduling_results, title):
     fig, gnt = plt.subplots()
     gnt.set_xlabel('Time units')
@@ -36,6 +40,7 @@ def plot_gantt_chart(scheduling_results, title):
     gnt.set_yticklabels(yticklabels)
     plt.show(block=False)
 
+# Calculate average wait time and turnaround time for FCFS scheduling
 def calculate_times_fcfs(process_map):
     current_time = 0
     total_wait_time = 0
@@ -56,6 +61,7 @@ def calculate_times_fcfs(process_map):
     avg_turnaround_time = total_turnaround_time / len(process_map)
     return scheduling_results, avg_wait_time, avg_turnaround_time
 
+# Calculate average wait time and turnaround time for Round Robin scheduling
 def calculate_times_rr(process_map, quantum=2):
     processes = deque(sorted(process_map.items(), key=lambda x: x[1][1]))
     current_time, total_wait_time, total_turnaround_time = 0, 0, 0
@@ -83,6 +89,7 @@ def calculate_times_rr(process_map, quantum=2):
     avg_turnaround_time = total_turnaround_time / len(process_map)
     return scheduling_results, avg_wait_time, avg_turnaround_time
 
+# Calculate average wait time and turnaround time for SRTF scheduling
 def calculate_times_srtf(process_map):
     ready_queue, current_time, total_wait_time, total_turnaround_time = [], 0, 0, 0
     processes = sorted(((pid, arrival, burst) for pid, (burst, arrival) in process_map.items()), key=lambda x: x[1])
@@ -116,7 +123,7 @@ def calculate_times_srtf(process_map):
     avg_turnaround_time = total_turnaround_time / len(process_map)
     return scheduling_results, avg_wait_time, avg_turnaround_time
 
-
+# Calculate, plot scheduling results, and print average times for each scheduling algorithm
 def calculate_and_plot_scheduling(process_map, scheduling_type='fcfs', quantum=2):
     if scheduling_type == 'fcfs':
         scheduling_results, avg_wait, avg_turnaround = calculate_times_fcfs(process_map)
@@ -128,7 +135,8 @@ def calculate_and_plot_scheduling(process_map, scheduling_type='fcfs', quantum=2
     print(f"{scheduling_type.upper()} Average Wait Time: {avg_wait}, Average Turnaround Time: {avg_turnaround}")
     plot_gantt_chart(scheduling_results, scheduling_type.upper())
 
-def result():
+# Main function to run simulations for FCFS, RR, and SRTF, plot Gantt charts, and display results
+def main():
     process_map = create_process_map()
     calculate_and_plot_scheduling(process_map, 'fcfs')
     calculate_and_plot_scheduling(process_map, 'rr', quantum=2)
@@ -136,4 +144,4 @@ def result():
 
     plt.show()  # Finally, display all plots
 
-result()
+main()
