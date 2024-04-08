@@ -38,7 +38,8 @@ def plot_gantt_chart(scheduling_results, title):
 
     gnt.set_yticks(yticks)
     gnt.set_yticklabels(yticklabels)
-    plt.show(block=False)
+    plt.show(block=True)
+    plt.close
 
 # Calculate average wait time and turnaround time for FCFS scheduling
 def calculate_times_fcfs(process_map):
