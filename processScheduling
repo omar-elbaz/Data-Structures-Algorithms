@@ -1,0 +1,141 @@
+import random
+import matplotlib.pyplot as plt
+import heapq
+from collections import deque
+
+class Process:
+    def __init__(self, id, burst, arrivalTime):
+        self.id = id
+        self.burst = burst
+        self.arrivalTime = arrivalTime
+
+def generate_process(id):
+    burst = random.randint(1, 5)
+    arrivalTime = random.randint(1, 15)
+    return Process(id, burst, arrivalTime)
+
+def create_process_map():
+    processes = {f"P{i}": generate_process(f"P{i}") for i in range(1, 11)}
+    return {pid: (process.burst, process.arrivalTime) for pid, process in processes.items()}
+
+def plot_gantt_chart(scheduling_results, title):
+    fig, gnt = plt.subplots()
+    gnt.set_xlabel('Time units')
+    gnt.set_ylabel('Processes')
+    gnt.set_title(title)
+    gnt.grid(True)
+
+    yticks, yticklabels, colors = [], [], []
+    color_map = {'fcfs': 'tab:blue', 'rr': 'tab:green', 'srtf': 'tab:red'}
+    for i, (pid, start, burst) in enumerate(scheduling_results):
+        gnt.broken_barh([(start, burst)], (10 * (i + 1), 9), facecolors=(color_map[title.lower()]))
+        yticks.append(10 * (i + 1) + 5)
+        yticklabels.append(pid)
+
+    gnt.set_yticks(yticks)
+    gnt.set_yticklabels(yticklabels)
+    plt.show(block=False)
+
+def calculate_times_fcfs(process_map):
+    current_time = 0
+    total_wait_time = 0
+    total_turnaround_time = 0
+    scheduling_results = []  # To hold the scheduling results for plotting
+    
+    for pid, (burst, arrival) in sorted(process_map.items(), key=lambda x: x[1][1]):
+        if current_time < arrival:
+            current_time = arrival
+        wait_time = current_time - arrival
+        turnaround_time = wait_time + burst
+        total_wait_time += wait_time
+        total_turnaround_time += turnaround_time
+        # Record each process's start time and burst duration
+        scheduling_results.append((pid, current_time, burst))
+        current_time += burst
+    
+    avg_wait_time = total_wait_time / len(process_map)
+    avg_turnaround_time = total_turnaround_time / len(process_map)
+    return scheduling_results, avg_wait_time, avg_turnaround_time
+
+def calculate_times_rr(process_map, quantum=2):
+    processes = deque(sorted(process_map.items(), key=lambda x: x[1][1]))
+    current_time, total_wait_time, total_turnaround_time = 0, 0, 0
+    wait_times = {pid: 0 for pid in process_map}
+    last_start_time = {pid: arrival for pid, (_, arrival) in process_map.items()}
+    scheduling_results = []
+
+    while processes:
+        pid, (burst, arrival) = processes.popleft()
+        if current_time < arrival:
+            current_time = arrival
+        execution_time = min(burst, quantum)
+        scheduling_results.append((pid, current_time, execution_time))  # Record scheduling for Gantt chart
+        wait_times[pid] += current_time - last_start_time[pid]
+        current_time += execution_time
+        burst -= execution_time
+        if burst > 0:
+            processes.append((pid, (burst, current_time)))
+            last_start_time[pid] = current_time
+        else:
+            total_turnaround_time += current_time - arrival
+
+    total_wait_time = sum(wait_times.values())
+    avg_wait_time = total_wait_time / len(process_map)
+    avg_turnaround_time = total_turnaround_time / len(process_map)
+    return scheduling_results, avg_wait_time, avg_turnaround_time
+
+def calculate_times_srtf(process_map):
+    ready_queue, current_time, total_wait_time, total_turnaround_time = [], 0, 0, 0
+    processes = sorted(((pid, arrival, burst) for pid, (burst, arrival) in process_map.items()), key=lambda x: x[1])
+    finish_times = {}
+    scheduling_results = []
+
+    while processes or ready_queue:
+        if not ready_queue and processes and processes[0][1] > current_time:
+            current_time = processes[0][1]
+        while processes and processes[0][1] <= current_time:
+            pid, arrival, burst = processes.pop(0)
+            heapq.heappush(ready_queue, (burst, pid, arrival))
+        if ready_queue:
+            burst, pid, arrival = heapq.heappop(ready_queue)
+            exec_time = next((processes[0][1] - current_time for process in processes if process[1] > current_time), burst)
+            scheduling_results.append((pid, current_time, exec_time))  # Record scheduling for Gantt chart
+            current_time += exec_time
+            burst -= exec_time
+            if burst > 0:
+                heapq.heappush(ready_queue, (burst, pid, arrival))
+            else:
+                finish_times[pid] = current_time
+
+    for pid, (burst, arrival) in process_map.items():
+        if pid in finish_times:
+            completion_time = finish_times[pid]
+            total_turnaround_time += completion_time - arrival
+            wait_time = completion_time - arrival - burst
+            total_wait_time += max(wait_time, 0)  # Ensure wait time is not negative
+
+    avg_wait_time = total_wait_time / len(process_map)
+    avg_turnaround_time = total_turnaround_time / len(process_map)
+    return scheduling_results, avg_wait_time, avg_turnaround_time
+
+
+def calculate_and_plot_scheduling(process_map, scheduling_type='fcfs', quantum=2):
+    if scheduling_type == 'fcfs':
+        scheduling_results, avg_wait, avg_turnaround = calculate_times_fcfs(process_map)
+    elif scheduling_type == 'rr':
+        scheduling_results, avg_wait, avg_turnaround = calculate_times_rr(process_map, quantum)
+    else:  # 'srtf'
+        scheduling_results, avg_wait, avg_turnaround = calculate_times_srtf(process_map)
+
+    print(f"{scheduling_type.upper()} Average Wait Time: {avg_wait}, Average Turnaround Time: {avg_turnaround}")
+    plot_gantt_chart(scheduling_results, scheduling_type.upper())
+
+def result():
+    process_map = create_process_map()
+    calculate_and_plot_scheduling(process_map, 'fcfs')
+    calculate_and_plot_scheduling(process_map, 'rr', quantum=2)
+    calculate_and_plot_scheduling(process_map, 'srtf')
+
+    plt.show()  # Finally, display all plots
+
+result()
