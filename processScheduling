@@ -30,16 +30,20 @@ def plot_gantt_chart(scheduling_results, title, avg_wait, avg_turnaround):
     gnt.set_title(title_with_avgs)
     gnt.grid(True)
 
+    color_map = {'P1': 'tab:blue', 'P2': 'tab:orange', 'P3': 'tab:green', 'P4': 'tab:red', 'P5': 'tab:purple',
+                 'P6': 'tab:brown', 'P7': 'tab:pink', 'P8': 'tab:gray', 'P9': 'tab:olive', 'P10': 'tab:cyan'}
+
     for i, (pid, start, burst) in enumerate(scheduling_results):
-        gnt.broken_barh([(start, burst)], (10 * (i + 1), 9), facecolors=('tab:orange'))
+        gnt.broken_barh([(start, burst)], (10 * (i + 1), 9), facecolors=(color_map.get(pid, 'tab:orange')))
 
     yticks = [10 * (i + 1) + 5 for i in range(len(scheduling_results))]
     yticklabels = [pid for pid, _, _ in scheduling_results]
     gnt.set_yticks(yticks)
     gnt.set_yticklabels(yticklabels)
 
-    plt.tight_layout(pad=3.0)  # Adjust layout to make more space
+    plt.tight_layout(pad=3.0)  
     plt.show(block=True)
+
 
 # Calculate average wait time and turnaround time for FCFS scheduling
 def calculate_times_fcfs(process_map):
