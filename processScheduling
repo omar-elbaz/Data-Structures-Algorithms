@@ -40,7 +40,7 @@ def calculate_times_fcfs(process_map):
     current_time = 0
     total_wait_time = 0
     total_turnaround_time = 0
-    scheduling_results = []  # To hold the scheduling results for plotting
+    scheduling_results = []  
     
     for pid, (burst, arrival) in sorted(process_map.items(), key=lambda x: x[1][1]):
         if current_time < arrival:
@@ -49,7 +49,6 @@ def calculate_times_fcfs(process_map):
         turnaround_time = wait_time + burst
         total_wait_time += wait_time
         total_turnaround_time += turnaround_time
-        # Record each process's start time and burst duration
         scheduling_results.append((pid, current_time, burst))
         current_time += burst
     
@@ -69,7 +68,7 @@ def calculate_times_rr(process_map, quantum=2):
         if current_time < arrival:
             current_time = arrival
         execution_time = min(burst, quantum)
-        scheduling_results.append((pid, current_time, execution_time))  # Record scheduling for Gantt chart
+        scheduling_results.append((pid, current_time, execution_time))  
         wait_times[pid] += current_time - last_start_time[pid]
         current_time += execution_time
         burst -= execution_time
@@ -99,8 +98,7 @@ def calculate_times_srtf(process_map):
         if ready_queue:
             burst, pid, arrival = heapq.heappop(ready_queue)
             exec_time = next((processes[0][1] - current_time for process in processes if process[1] > current_time), burst)
-            scheduling_results.append((pid, current_time, exec_time))  # Record scheduling for Gantt chart
-            current_time += exec_time
+            scheduling_results.append((pid, current_time, exec_time))  
             burst -= exec_time
             if burst > 0:
                 heapq.heappush(ready_queue, (burst, pid, arrival))
@@ -112,7 +110,7 @@ def calculate_times_srtf(process_map):
             completion_time = finish_times[pid]
             total_turnaround_time += completion_time - arrival
             wait_time = completion_time - arrival - burst
-            total_wait_time += max(wait_time, 0)  # Ensure wait time is not negative
+            total_wait_time += max(wait_time, 0)  
 
     avg_wait_time = total_wait_time / len(process_map)
     avg_turnaround_time = total_turnaround_time / len(process_map)
