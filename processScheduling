@@ -22,24 +22,24 @@ def create_process_map():
     return {pid: (process.burst, process.arrivalTime) for pid, process in processes.items()}
 
 # Plot a Gantt chart for the given scheduling results
-def plot_gantt_chart(scheduling_results, title):
-    fig, gnt = plt.subplots()
+def plot_gantt_chart(scheduling_results, title, avg_wait, avg_turnaround):
+    fig, gnt = plt.subplots(figsize=(10, 6))  
     gnt.set_xlabel('Time units')
     gnt.set_ylabel('Processes')
-    gnt.set_title(title)
+    title_with_avgs = f"{title} - Avg Wait: {avg_wait:.2f}, Avg Turnaround: {avg_turnaround:.2f}"
+    gnt.set_title(title_with_avgs)
     gnt.grid(True)
 
-    yticks, yticklabels, colors = [], [], []
-    color_map = {'fcfs': 'tab:blue', 'rr': 'tab:green', 'srtf': 'tab:red'}
     for i, (pid, start, burst) in enumerate(scheduling_results):
-        gnt.broken_barh([(start, burst)], (10 * (i + 1), 9), facecolors=(color_map[title.lower()]))
-        yticks.append(10 * (i + 1) + 5)
-        yticklabels.append(pid)
+        gnt.broken_barh([(start, burst)], (10 * (i + 1), 9), facecolors=('tab:orange'))
 
+    yticks = [10 * (i + 1) + 5 for i in range(len(scheduling_results))]
+    yticklabels = [pid for pid, _, _ in scheduling_results]
     gnt.set_yticks(yticks)
     gnt.set_yticklabels(yticklabels)
+
+    plt.tight_layout(pad=3.0)  # Adjust layout to make more space
     plt.show(block=True)
-    plt.close
 
 # Calculate average wait time and turnaround time for FCFS scheduling
 def calculate_times_fcfs(process_map):
@@ -98,27 +98,27 @@ def calculate_times_srtf(process_map):
     scheduling_results = []
 
     while processes or ready_queue:
-        if not ready_queue and processes and processes[0][1] > current_time:
-            current_time = processes[0][1]
         while processes and processes[0][1] <= current_time:
             pid, arrival, burst = processes.pop(0)
-            heapq.heappush(ready_queue, (burst, pid, arrival))
+            heapq.heappush(ready_queue, (burst, current_time, pid))
         if ready_queue:
-            burst, pid, arrival = heapq.heappop(ready_queue)
-            exec_time = next((processes[0][1] - current_time for process in processes if process[1] > current_time), burst)
-            scheduling_results.append((pid, current_time, exec_time))  
+            burst, started_at, pid = heapq.heappop(ready_queue)
+            exec_time = burst if not processes else min(burst, processes[0][1] - current_time)
+            scheduling_results.append((pid, current_time, exec_time))
+            current_time += exec_time
             burst -= exec_time
             if burst > 0:
-                heapq.heappush(ready_queue, (burst, pid, arrival))
+                heapq.heappush(ready_queue, (burst, current_time, pid))
             else:
                 finish_times[pid] = current_time
-
+        else:
+            if processes:
+                current_time = processes[0][1]
+    
     for pid, (burst, arrival) in process_map.items():
-        if pid in finish_times:
-            completion_time = finish_times[pid]
-            total_turnaround_time += completion_time - arrival
-            wait_time = completion_time - arrival - burst
-            total_wait_time += max(wait_time, 0)  
+        finish_time = finish_times.get(pid, arrival + burst)
+        total_turnaround_time += finish_time - arrival
+        total_wait_time += finish_time - arrival - burst
 
     avg_wait_time = total_wait_time / len(process_map)
     avg_turnaround_time = total_turnaround_time / len(process_map)
@@ -134,7 +134,7 @@ def calculate_and_plot_scheduling(process_map, scheduling_type='fcfs', quantum=2
         scheduling_results, avg_wait, avg_turnaround = calculate_times_srtf(process_map)
 
     print(f"{scheduling_type.upper()} Average Wait Time: {avg_wait}, Average Turnaround Time: {avg_turnaround}")
-    plot_gantt_chart(scheduling_results, scheduling_type.upper())
+    plot_gantt_chart(scheduling_results, scheduling_type.upper(), avg_wait, avg_turnaround)
 
 # Main function to run simulations for FCFS, RR, and SRTF, plot Gantt charts, and display results
 def main():
